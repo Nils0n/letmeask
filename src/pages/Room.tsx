@@ -4,20 +4,52 @@ import { RoomCode } from "../components/RoomCode";
 import { useParams } from "react-router-dom";
 
 import "../styles/room.scss";
+import { FormEvent, useState } from "react";
+import { useAuht } from "../hooks/useAuth";
+import toast, { Toaster } from "react-hot-toast";
+import { database } from "../services/firebase";
+import { push, ref } from "firebase/database";
 
 type RoomParams = {
-    id:string;
-}
+  id: string;
+};
 
 export function Room() {
-    const {id} = useParams<RoomParams>();
-    
+  const { user } = useAuht();
+  const { id } = useParams<RoomParams>();
+  const [newQuestion, setNewQuestion] = useState("");
+
+  async function handleSendQuestion(event: FormEvent) {
+    event.preventDefault();
+
+    if (newQuestion.trim() === "") return;
+
+    if (!user) toast.error("Você precisa está logado.");
+
+    const question = {
+      content: newQuestion,
+      author: {
+        name: user?.name,
+        avatar: user?.avatar,
+      },
+      isHighLighted: false,
+      isAnswered: false,
+    };
+
+    await push(ref(database, `rooms/${id}/questions`), {
+      questions: question,
+    });
+
+    toast.success("Pergunta enviada com sucesso.");
+    setNewQuestion("");
+  }
+
   return (
     <div id="page-room">
       <header>
         <div className="content">
           <img src={logoImg} alt="Letmeask" />
-          <RoomCode code={id}/>
+          <RoomCode code={id} />
         </div>
       </header>
       <main>
@@ -25,13 +57,28 @@ export function Room() {
           <h1>Sala React</h1>
           <span>4 perguntas</span>
         </div>
-        <form>
-          <textarea placeholder="O que você quer perguntar" />
+        <form onSubmit={handleSendQuestion}>
+          <textarea
+            placeholder="O que você quer perguntar"
+            onChange={(event) => setNewQuestion(event.target.value)}
+            value={newQuestion}
+          />
           <div className="form-footer">
-            <span>
-              Para enviar uma pergunta, <button>faça seu login</button>.
-            </span>
-            <Button type="submit">Enviar pergunta</Button>
+            {user ? (
+              <div className="user-info">
+                <img src={user.avatar} alt={user.name} />
+                <span>{user.name}</span>
+              </div>
+            ) : (
+              <span>
+                Para enviar uma pergunta, <button>faça seu login</button>.
+              </span>
+            )}
+
+            <Button type="submit" disabled={!user}>
+              Enviar pergunta
+            </Button>
+            <Toaster />
           </div>
         </form>
       </main>
