@@ -38,9 +38,10 @@ export function Room() {
       ref(database, `rooms/${id}`),
       (snapshot: DataSnapshot) => {
         const roomRef = snapshot.val();
-        const firebaseQuestions: FirebaseQuestions = roomRef.questions;
+        const firebaseQuestions: FirebaseQuestions = roomRef.questions ?? "";
         const parsedQuestions = Object.entries(firebaseQuestions).map(
           ([key, value]) => {
+            console.log(value);
             return {
               id: key,
               content: value.content,
@@ -50,7 +51,7 @@ export function Room() {
             };
           }
         );
-        console.log(parsedQuestions);
+        console.log(firebaseQuestions);
       },
       {
         onlyOnce: true,
@@ -75,9 +76,7 @@ export function Room() {
       isAnswered: false,
     };
 
-    await push(ref(database, `rooms/${id}/questions`), {
-      questions: question,
-    });
+    await push(ref(database, `rooms/${id}/questions`), question);
 
     toast.success("Pergunta enviada com sucesso.");
     setNewQuestion("");
